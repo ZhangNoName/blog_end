@@ -2,16 +2,19 @@ from fastapi import FastAPI, Query
 from typing import Union
 from enum import Enum
 from pydantic import BaseModel
-import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
 
 from user.login import router as user_router
 app = FastAPI()
+# 配置 CORS 允许所有来源
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 允许所有来源
+    allow_credentials=True,
+    allow_methods=["*"], # 允许所有 HTTP 方法
+    allow_headers=["*"], # 允许所有 HTTP 头
+)
 app.include_router(user_router)
-if __name__ == '__main__':
-    print('现在是主线程，运行这里',end='\n')
-    # 启动时设置host和post
-    
-    uvicorn.run(app="main:app",host="0.0.0.0",port=8000,reload=True)
 
 class UserType(str,Enum):
     student= 'edu'
