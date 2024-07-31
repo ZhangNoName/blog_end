@@ -40,6 +40,8 @@ app = FastAPI()
 #         return response
 
 ##! 开启日志记录的中间件
+##? 123
+
 # app.add_middleware(redis_client.LoggingMiddleware)
 
 # 配置 CORS 允许所有来源
