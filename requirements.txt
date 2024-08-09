@@ -3,3 +3,4 @@ uvicorn
 pymongo
 aioredis
 redis
+motor
