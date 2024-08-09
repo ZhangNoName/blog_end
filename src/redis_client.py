@@ -3,7 +3,7 @@ import itertools
 from fastapi import Request, Response
 from fastapi.responses import StreamingResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-import redis
+import redis  
 import uuid
 import time
 import json
@@ -41,7 +41,7 @@ async def log_response(request_id, start_time, response: Response):
         body_content = body.read()
     else:
         body_content = await response.body()
-    
+     
     response_data = {
         "request_id": request_id,
         "status_code": response.status_code,

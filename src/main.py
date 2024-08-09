@@ -53,19 +53,19 @@ app.add_middleware(
     allow_headers=["*"], # 允许所有 HTTP 头
 )
 # app.include_router(base_router )
-# app.include_router(blog_router)
+app.include_router(blog_router)
 @app.get("/")
 async def read_root():
     return {"Hello": "World"}
 
-@app.get("/logs/{request_id}")
-async def get_logs(request_id: str):
-    request_log = r.get(f"request:{request_id}")
-    response_log = r.get(f"response:{request_id}")
-    if not request_log or not response_log:
-        return {"error": "Logs not found"}
-    return {
-        "request": json.loads(request_log),
-        "response": json.loads(response_log)
-    }
+# @app.get("/logs/{request_id}")
+# async def get_logs(request_id: str):
+#     request_log = r.get(f"request:{request_id}")
+#     response_log = r.get(f"response:{request_id}")
+#     if not request_log or not response_log:
+#         return {"error": "Logs not found"}
+#     return {
+#         "request": json.loads(request_log),
+#         "response": json.loads(response_log)
+#     }
     
