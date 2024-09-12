@@ -46,7 +46,7 @@ class Application(FastAPI):
            pass
        
     def load_config(self, env='dev'):
-        config_path = f'./app/conf/{env}.yml'
+        config_path = f'./src/conf/{env}.yml'
 
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"Configuration file not found: {config_path}")
