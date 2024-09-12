@@ -9,6 +9,11 @@ from starlette.responses import Response
 import json
 from .routers import base_router, blog_router
 import redis_client
+
+# 不生成__pycache__文件
+import sys
+sys.dont_write_bytecode = True
+
 # from .database import connect_db, close_db
 app = FastAPI()
 

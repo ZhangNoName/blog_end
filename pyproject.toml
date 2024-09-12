@@ -19,6 +19,7 @@ pymongo = "^4.8.0"
 aioredis = "^2.0.1"
 redis = "^5.0.8"
 motor = "^3.5.1"
+loguru = "^0.7.2"
 
 
 [build-system]
