@@ -1,93 +1,221 @@
-from typing import Optional
 from pymongo import MongoClient
-import gridfs
-import numpy as np
 from loguru import logger
+from pymongo.cursor import Cursor
 
 class MongoDBManager:
-    def __init__(self, db_name:str, host:str, port:str, user:str, passWord:str):
-        uri = f"mongodb://{user}:{passWord}@{host}:{port}/{db_name}?authSource=admin"
-        try:
-            self.client = MongoClient(uri)
-            self.db = self.client[db_name]
-            self.fs = gridfs.GridFS(self.db)
-            self.host = host
-            self.port = port
-            self.db_name = db_name
-            self.user = user
-            self.passWord = passWord
-            logger.info("MongoDB connection established.")
-        except Exception as e:
-            logger.error(f"Error connecting to MongoDB: {e}")
+    """mongo服务"""
+    logger = logger
+    def __init__(self, ip, port, db, user=None, passwd=None, **kwargs):
+        super().__init__()
 
-    def open_connection(self):
-        """
-        链接到一个数据库
-        """
-        try:
-            self.client = MongoClient(self.host, self.port)
-            self.db = self.client[self.db_name]
-            self.fs = gridfs.GridFS(self.db)
-            logger.info("Database connection opened.")
-        except Exception as e:
-            logger.error(f"Error opening database connection: {e}")
+        self.ip = ip
+        self.port = port
+        self.dbname = db
+        self.user = user # 对用户名进行URL编码
+        self.passwd = passwd
 
-    def close_connection(self):
+        self.connect()
+        self.ping()
+
+    def __repr__(self) -> str:
+        return "mongodb {}:{} db:{}".format(self.ip, self.port, self.dbname)
+
+    def connect(self) -> bool:
+        try:
+            # 在MongoClient中直接进行认证
+            pool = MongoClient(self.ip, self.port, username=self.user, password=self.passwd)
+            self.db = pool[self.dbname]  # 获取数据库对象
+            self.logger.debug(f"{self} authenticated")
+        except Exception as ex:
+            self.db = None
+            self.logger.error(f"failed to connect {self}: {ex}")
+            return False
+        else:
+            return True
+
+    def _maybe_reconnect(self):
+        if self.db is None and not self.connect():
+            raise Exception()
+
+    def ping(self) -> bool:
         """
-        断开与数据库的链接
+        ping 探活
         """
         try:
-            self.client.close()
-            logger.info("Database connection closed.")
-        except Exception as e:
-            logger.error(f"Error closing database connection: {e}")
+            self._maybe_reconnect()
+
+            return True
+        except:
+            return False
     
-    def delete(self, query, collection_name=None):
+    def find(self, collection_name: str, filter, batch_size: int = 0) -> Cursor:
         """
-        删除满足查询条件的数据。
+        查询
+        @param collection_name: collection名
+        @param filter: 查询的过滤条件
+        @param batch_size: 查询批量大小
+        @return 结果
+        """
+        self._maybe_reconnect()
 
-        Parameters:
-            query (dict): 查询条件，用于匹配要删除的文档。
-            collection_name (str, optional): 集合名称。如果未指定，则使用默认集合名称。
+        output = self.db[collection_name].find(filter).batch_size(batch_size)
+        return output
+    
+    def find_all(self, collection_name: str, filter) -> Cursor:
+        """
+        查询集合collection_name中的全部数据
+        @param collection_name: collection名
+        @param filter: 查询的过滤条件
+        @return 结果
+        """
+        self._maybe_reconnect()
 
-        Returns:
-            dict: 包含删除操作结果的对象。
+        output = self.db[collection_name].find(filter)
+        return output
+    
+
+    def find_page_query(self, collection_name: str, filter, page_size: int = 0, skip: int = 0,
+                        sort_by: str = '', sort_num: int = 1) -> Cursor:
+        """
+        查询
+        @param collection_name: collection名
+        @param filter: 查询的过滤条件
+        @param page_size: 每页批量大小
+        @param skip: 偏移量
+        @param sort_by: 排序字段
+        @param sort_num: 排序规则
+        @return 结果
+        """
+        self._maybe_reconnect()
+        if sort_by:
+            output = self.db[collection_name].find(filter).limit(page_size).skip(skip).sort(sort_by, sort_num)
+        else:
+            output = self.db[collection_name].find(filter).limit(page_size).skip(skip)
+        return output
+
+    def find_count(self, collection_name: str, filter) -> Cursor:
+        """
+        查询
+        @param collection_name: collection名
+        @param filter: 查询的过滤条件
+        @return 结果
+        """
+        self._maybe_reconnect()
+
+        output = self.db[collection_name].find(filter).count()
+        return output
+
+    def find_one(self, collection_name: str, filter) -> Cursor:
+        """
+        查询一个结果
+        @param collection_name: collection名
+        @param filter: 查询的过滤条件
+        @return 结果
+        """
+        self._maybe_reconnect()
+
+        output = self.db[collection_name].find_one(filter)
+        return output
+
+    def insert_one(self, collection_name: str, document) -> bool:
+        """
+        插入单个文档
+        @param collection_name: collection名
+        @param document: 插入的文档
+        @return: 插入成功返回True，否则False
         """
         try:
-            if collection_name is None:
-                logger.error('未传入要删除的集合名称')
+            self._maybe_reconnect()
+            self.db[collection_name].insert_one(document)
+            return True
+        except Exception as ex:
+            self.logger.error(f"Insert failed in {collection_name}: {ex}")
+            return False
+
+    def insert_many(self, collection_name: str, documents) -> bool:
+        """
+        插入多个文档
+        @param collection_name: collection名
+        @param documents: 插入的文档列表
+        @return: 插入成功返回True，否则False
+        """
+        try:
+            self._maybe_reconnect()
+            self.db[collection_name].insert_many(documents)
+            return True
+        except Exception as ex:
+            self.logger.error(f"Insert failed in {collection_name}: {ex}")
+            return False
+
+    def update_one(self, collection_name: str, filter, update,upsert:bool=True) -> bool:
+        """
+        更新单个文档
+        @param collection_name: collection名
+        @param filter: 更新的过滤条件
+        @param update: 更新操作
+        @param upsert: 没有应数据是否新建,默认为True(没有就新建)
+        @return: 更新成功返回True，否则False
+        """
+        try:
+            self._maybe_reconnect()
+            res = self.db[collection_name].update_one(filter, {"$set": update},upsert=upsert)
+            if res.matched_count == 0:
                 return False
+            return True
+        except Exception as ex:
+            self.logger.error(f"Update failed in {collection_name}: {ex}")
+            return False
 
-            collection = self.db[collection_name]
-            result = collection.delete_one(query)
-
-            if result.deleted_count > 0:
-                logger.info(f"Deleted {result.deleted_count} document(s) from {collection_name}.")
-            else:
-                logger.info(f"No matching documents found in {collection_name} to delete.")
-
-            return {"deleted_count": result.deleted_count}
-        except Exception as e:
-            logger.error(f"Error deleting document: {e}")
-            return None
-    
-   
-    def find_collection(self, collection_name):
+    def update_many(self, collection_name: str, filter, update) -> bool:
         """
-        查找集合内全部数据
-        
-        Args:
-            collection_name[str]:集合的名称
+        更新多个文档
+        @param collection_name: collection名
+        @param filter: 更新的过滤条件
+        @param update: 更新操作
+        @return: 更新成功返回True，否则False
         """
         try:
-            collection = self.db[collection_name]
-            result = collection.find()
-            if result:
-                logger.info(f"Found data in {collection_name}.")
-                return result
-            else:
-                logger.info(f"No matching data found in {collection_name}.")
-                return None
-        except Exception as e:
-            logger.error(f"Error finding data in {collection_name}: {e}")
-            return None
+            self._maybe_reconnect()
+            res = self.db[collection_name].update_many(filter, {"$set": update})
+            if res.matched_count == 0:
+                return False
+            return True
+        except Exception as ex:
+            self.logger.error(f"Update failed in {collection_name}: {ex}")
+            return False
+
+    def delete_one(self, collection_name: str, filter) -> bool:
+        """
+        删除单个文档
+        @param collection_name: collection名
+        @param filter: 删除的过滤条件
+        @return: 删除成功返回True，否则False
+        """
+        try:
+            self._maybe_reconnect()
+            res = self.db[collection_name].delete_one(filter)
+            if res.deleted_count == 0:
+                return False
+            return True
+        except Exception as ex:
+            self.logger.error(f"Delete failed in {collection_name}: {ex}")
+            return False
+
+    def delete_many(self, collection_name: str, filter) -> bool:
+        """
+        删除多个文档
+        @param collection_name: collection名
+        @param filter: 删除的过滤条件
+        @return: 删除成功返回True，否则False
+        """
+        try:
+            self._maybe_reconnect()
+            res = self.db[collection_name].delete_many(filter)
+            if res.deleted_count == 0:
+                return False
+            return True
+        except Exception as ex:
+            self.logger.error(f"Delete failed in {collection_name}: {ex}")
+            return False
+        
+
