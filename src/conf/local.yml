@@ -3,21 +3,20 @@
 
 
 redis:
-  auth: OLredis~2023
+  auth: zxy@blog
   ip: localhost
-  port: 8379
-  db: 1
+  port: 6379
+  db: 0
 
 mongo:
   ip: localhost
   port: 27017
   db: ai_memory
-  user: mongoadmin
-  passwd: OLmongo2024
+  user: blog
+  passwd: zxy@blog
 
-redis:
+mysql:
   ip: localhost
-  port: 27017
-  db: ai_memory
-  user: mongoadmin
-  passwd: OLmongo2024
+  port: 3306
+  user: root
+  passwd: Zxy@020206
