@@ -27,7 +27,6 @@ class Application(FastAPI):
             allow_headers=["*"],
         )
 
-
     def init(self, env='dev'):
         self.load_config(env=env)  # todo: modify env config
         self.__init__mongoDB()
@@ -59,14 +58,14 @@ class Application(FastAPI):
         
     def __init__mongoDB(self):
         """初始化链接到mongoDB"""
-        self.mongo = MongoDBManager(host=self.config['mongo']['ip'],port=self.config['mongo']['port'],db_name=self.config['mongo']['db'],user=self.config['mongo']['user'],passWord=self.config['mongo']['passwd'])
+        self.mongo = MongoDBManager(ip=self.config['mongo']['ip'],port=self.config['mongo']['port'],db=self.config['mongo']['db'],user=self.config['mongo']['user'],passwd=self.config['mongo']['passwd'])
         
         
     def __init__redis(self):
         """
         初始化redis类
         """
-        self.redis = RedisManager(host=self.config['redis']['ip'],port=self.config['redis']['port'],db=self.config['redis']['db'],auth=self.config['redis']['auth'])
+        self.redis = RedisManager(ip=self.config['redis']['ip'],port=self.config['redis']['port'],db=self.config['redis']['db'],auth=self.config['redis']['auth'],key_prefix='blog')
         
     def __init_memory_by_file(self):
         pass

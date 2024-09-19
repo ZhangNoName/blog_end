@@ -11,7 +11,7 @@ redis:
 mongo:
   ip: localhost
   port: 27017
-  db: ai_memory
+  db: blog
   user: blog
   passwd: zxy@blog
 
