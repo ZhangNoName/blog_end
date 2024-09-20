@@ -1,70 +1,71 @@
-from fastapi import APIRouter, HTTPException, Body
-from pydantic import BaseModel, Field
-from bson import ObjectId
-from datetime import datetime
-from motor.motor_asyncio import AsyncIOMotorClient
-from typing import Optional
+import uuid
+from fastapi import APIRouter, Depends, HTTPException, status
+from loguru import logger
+from pydantic import BaseModel
+from src.controller.blog_manage import BlogManager
+from app_instance import app
+from src.type.blog_type import Blog
 
-router = APIRouter()
 
-# 初始化 Motor 客户端
-client = AsyncIOMotorClient("mongodb://localhost:27017")  # 这里替换成你的 MongoDB 连接字符串
-db = client.blog_db  # 这里替换成你的数据库名称
-blog_collection = db.blogs  # 这里替换成你的集合名称
+# 创建博客 API 路由
+router = APIRouter(prefix="/blogs")
 
-# Pydantic 模型
-class BlogModel(BaseModel):
-    title: str = Field(...)
-    content: str = Field(...)
-    author: Optional[str] = Field(default=None, description="创建者名称")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+# 注入 BlogManager 依赖
+def get_blog_manager() -> BlogManager:
+    if not hasattr(app, 'blog'):
+        raise HTTPException(status_code=500, detail="Blog manager not initialized")
+    return app.blog
 
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+# 创建新博客
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_blog(blog: Blog, blog_manager: BlogManager = Depends(get_blog_manager)):
+    """
+    创建新的博客
 
-    @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid ObjectId")
-        return ObjectId(v)
+    Args:
+        blog (Blog): 新博客的数据模型
 
-class BlogResponseModel(BaseModel):
-    id: str = Field(..., alias="_id")
-    title: str
-    content: str
-    author: Optional[str]
-    created_at: Optional[datetime]
-
-# 获取所有博客
-@router.get("/blogs/")
-async def get_blogs():
-    blogs = await blog_collection.find().to_list(length=100)
-    return blogs
-
-# 获取单个博客
-@router.get("/blogs/{id}", response_model=BlogResponseModel)
-async def get_blog(id: str):
-    try:
-        obj_id = PyObjectId.validate(id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid ObjectId format")
+    Returns:
+        dict: 包含新博客 ID 的字典
+    """
+    logger.info(f'接收到的参数：{blog}')
     
-    blog = await blog_collection.find_one({"_id": obj_id})
-    
+    res = blog_manager.add_blog(blog)
+    if res:
+        return {"id": blog.id,"success":True}
+    else:
+        return {"id": None,"success":False}
+
+# 获取指定博客
+@router.get("/{blog_id}")
+async def get_blog(blog_id: str, blog_manager: BlogManager = Depends(get_blog_manager)):
+    """
+    获取指定 ID 的博客
+
+    Args:
+        blog_id (str): 博客的 ID
+
+    Returns:
+        Blog: 博客对象，如果不存在则抛出 404 错误
+    """
+    blog = blog_manager.get_blog(blog_id)
+    # logger.info(f'查找的结果{blog}')
     if not blog:
-        raise HTTPException(status_code=404, detail="Blog not found")
-    
-    blog["_id"] = str(blog["_id"])
-    return BlogResponseModel(**blog)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Blog not found")
+    return blog
 
-# 添加博客
-@router.post("/blogs/")
-async def add_blog(blog: BlogModel = Body(...)):
-    blog_dict = blog.dict()
-    blog_dict["_id"] = ObjectId()
-    result = await blog_collection.insert_one(blog_dict)
-    if result.inserted_id:
-        return {"id": str(result.inserted_id), "message": "Blog added successfully"}
-    raise HTTPException(status_code=500, detail="Failed to add blog")
+# 删除指定博客
+@router.delete("/{blog_id}")
+async def delete_blog(blog_id: str, blog_manager: BlogManager = Depends(get_blog_manager)):
+    """
+    删除指定 ID 的博客
+
+    Args:
+        blog_id (str): 博客的 ID
+
+    Returns:
+        dict: 包含删除成功消息的字典
+    """
+    if not blog_manager.delete_blog(blog_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Blog not found")
+    return {"message": "Blog deleted successfully"}
