@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from src.controller.blog_manage import BlogManager
 from app_instance import app
 from src.type.blog_type import Blog
+from src.type.type import ResponseModel
 
 
 # 创建博客 API 路由
@@ -32,9 +33,9 @@ async def create_blog(blog: Blog, blog_manager: BlogManager = Depends(get_blog_m
     
     res = blog_manager.add_blog(blog)
     if res:
-        return {"id": blog.id,"success":True}
+        return ResponseModel(code=0, data={"id": blog.id}, message="创建成功")
     else:
-        return {"id": None,"success":False}
+        return ResponseModel(code=-1, data=None, message="创建失败")
 
 # 获取指定博客
 @router.get("/{blog_id}")
@@ -51,8 +52,31 @@ async def get_blog(blog_id: str, blog_manager: BlogManager = Depends(get_blog_ma
     blog = blog_manager.get_blog(blog_id)
     # logger.info(f'查找的结果{blog}')
     if not blog:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Blog not found")
-    return blog
+        return ResponseModel(code=-1, data=None, message="博客不存在")
+    return ResponseModel(code=0, data=blog, message="获取成功")
+
+# 分页获取博客
+@router.get("/")
+async def get_blogs_paginated(
+    page: int = 1,
+    page_size: int = 10,
+    blog_manager: BlogManager = Depends(get_blog_manager)
+):
+    """
+    分页获取博客列表
+
+    Args:
+        page (int, optional): 页码. Defaults to 1.
+        page_size (int, optional): 每页显示数量. Defaults to 10.
+        blog_manager (BlogManager, optional): 博客管理对象. Defaults to Depends(get_blog_manager).
+
+    Returns:
+        dict: 包含分页信息的字典
+    """
+
+    blogs = blog_manager.get_blog_by_page(page, page_size)
+    return ResponseModel(code=0, data=blogs, message="获取成功")
+
 
 # 删除指定博客
 @router.delete("/{blog_id}")
@@ -67,5 +91,5 @@ async def delete_blog(blog_id: str, blog_manager: BlogManager = Depends(get_blog
         dict: 包含删除成功消息的字典
     """
     if not blog_manager.delete_blog(blog_id):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Blog not found")
-    return {"message": "Blog deleted successfully"}
+        return ResponseModel(code=-1, data=None, message="博客不存在")
+    return ResponseModel(code=0, data=None, message="删除成功")

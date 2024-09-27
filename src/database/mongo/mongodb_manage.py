@@ -93,7 +93,7 @@ class MongoDBManager:
             output = self.db[collection_name].find(filter).limit(page_size).skip(skip)
         return output
 
-    def find_count(self, collection_name: str, filter) -> Cursor:
+    def find_count(self, collection_name: str, filter={}) -> Cursor:
         """
         查询
         @param collection_name: collection名
@@ -102,7 +102,7 @@ class MongoDBManager:
         """
         self._maybe_reconnect()
 
-        output = self.db[collection_name].find(filter).count()
+        output = self.db[collection_name].count_documents(filter)
         return output
 
     def find_one(self, collection_name: str, filter) -> Cursor:

@@ -1,3 +1,4 @@
+from typing import List
 import uuid
 from datetime import datetime
 
@@ -52,3 +53,26 @@ class BlogManager:
         if blog_data:
             return Blog(**blog_data)
         return None
+    
+    def get_blog_by_page(self, page: int, page_size: int) -> List[Blog]:
+        """
+        分页获取博客列表。
+
+        Args:
+            page (int): 页码，从1开始
+            page_size (int): 每页显示的博客数量
+
+        Returns:
+            List[Blog]: 分页后的博客列表
+        """
+
+        skip = (page - 1) * page_size
+        blogs_data = self.db.find_page_query("blogs", filter={}, skip=skip, page_size=page_size)
+        total_count = self.db.find_count("blogs")
+
+        return {
+            "total": total_count,
+            "page": page,
+            "page_size": page_size,
+            "list": [Blog(**blog_data) for blog_data in blogs_data]
+        }
