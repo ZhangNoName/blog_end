@@ -50,10 +50,14 @@ async def get_blog(blog_id: str, blog_manager: BlogManager = Depends(get_blog_ma
         Blog: 博客对象，如果不存在则抛出 404 错误
     """
     blog = blog_manager.get_blog(blog_id)
-    # logger.info(f'查找的结果{blog}')
+    logger.info(f'查找的结果-----{blog}')
+    
     if not blog:
         return ResponseModel(code=-1, data=None, message="博客不存在")
-    return ResponseModel(code=0, data=blog, message="获取成功")
+
+    blog_dict = {item[0]: item[1] for item in blog}
+
+    return ResponseModel(code=0, data=blog_dict, message="获取成功")
 
 # 分页获取博客
 @router.get("/")

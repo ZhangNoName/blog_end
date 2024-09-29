@@ -50,6 +50,7 @@ class BlogManager:
             Blog: 博客对象，如果不存在则返回 None
         """
         blog_data = self.db.find_one("blogs", {"id": blog_id})
+        logger.info(f'查询到的结果{blog_data}')
         if blog_data:
             return Blog(**blog_data)
         return None

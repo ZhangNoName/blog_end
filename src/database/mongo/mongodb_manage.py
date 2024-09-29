@@ -1,3 +1,4 @@
+from typing import Optional
 from pymongo import MongoClient
 from loguru import logger
 from pymongo.cursor import Cursor
@@ -105,7 +106,7 @@ class MongoDBManager:
         output = self.db[collection_name].count_documents(filter)
         return output
 
-    def find_one(self, collection_name: str, filter) -> Cursor:
+    def find_one(self, collection_name: str, filter:dict) ->  Optional[dict]:
         """
         查询一个结果
         @param collection_name: collection名
