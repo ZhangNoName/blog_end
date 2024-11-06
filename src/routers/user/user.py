@@ -9,7 +9,7 @@ from src.type.type import ResponseModel
 
 
 # 创建博客 API 路由
-router = APIRouter(prefix="/blogs",tags=["blog"])
+router = APIRouter(prefix="/user",tags=["user"])
 
 # 注入 BlogManager 依赖
 def get_blog_manager() -> BlogManager:

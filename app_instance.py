@@ -7,6 +7,7 @@ from loguru import logger
 from fastapi.middleware.cors import CORSMiddleware
 from src.controller.blog_manage import BlogManager
 from src.database.mongo.mongodb_manage import MongoDBManager
+from src.database.mysql.mysql_manage import MySQLManager
 from src.database.redis.redis_manage import RedisManager
 
 class Application(FastAPI):
@@ -24,6 +25,7 @@ class Application(FastAPI):
         self.load_config(env=env)
         self.__init__mongoDB()
         self.__init__redis()
+        self.__init__mysql()
         self.__init_blog_manager()
         logger.info(f'当前模式为{env}')
         if env == 'local':
@@ -53,6 +55,8 @@ class Application(FastAPI):
 
     def __init__redis(self):
         self.redis = RedisManager(ip=self.config['redis']['ip'], port=self.config['redis']['port'], db=self.config['redis']['db'], auth=self.config['redis']['auth'], key_prefix='blog')
+    def __init__mysql(self):
+        self.mysql = MySQLManager(ip=self.config['mysql']['ip'], port=self.config['mysql']['port'], db=self.config['mysql']['db'], user=self.config['mysql']['user'], passwd=self.config['mysql']['passwd'])
 
     def __init_blog_manager(self):
         self.blog = BlogManager(dataBase=self.mongo)

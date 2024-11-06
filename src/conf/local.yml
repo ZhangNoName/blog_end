@@ -1,7 +1,6 @@
 # memory_folder: ./src/database/memory
 # conversation: ./src/database/conversation/conversation.pkl
 
-
 redis:
   auth: zxy@blog
   ip: localhost
@@ -18,5 +17,6 @@ mongo:
 mysql:
   ip: localhost
   port: 3306
-  user: root
+  db: blog
+  user: blog
   passwd: Zxy@020206
