@@ -2,98 +2,99 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 from pydantic import BaseModel
-from src.controller.blog_manage import BlogManager
+from src.controller.user_manage import UserManager
 from app_instance import app
-from src.type.blog_type import Blog
+from src.type.user_type import User
 from src.type.type import ResponseModel
 
 
-# 创建博客 API 路由
+# 创建用户 API 路由
 router = APIRouter(prefix="/user",tags=["user"])
 
-# 注入 BlogManager 依赖
-def get_blog_manager() -> BlogManager:
-    if not hasattr(app, 'blog'):
-        raise HTTPException(status_code=500, detail="Blog manager not initialized")
-    return app.blog
+# 注入 UserManager 依赖
+def get_user_manager() -> UserManager:
+    if not hasattr(app, 'user'):
+        raise HTTPException(status_code=500, detail="User manager not initialized")
+    return app.user
 
-# 创建新博客
+# 创建新用户
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_blog(blog: Blog, blog_manager: BlogManager = Depends(get_blog_manager)):
+async def create_user(user: User, user_manager: UserManager = Depends(get_user_manager)):
     """
-    创建新的博客
+    创建新的用户
 
     Args:
-        blog (Blog): 新博客的数据模型
+        user (User): 新用户的数据模型
 
     Returns:
-        dict: 包含新博客 ID 的字典
+        dict: 包含新用户 ID 的字典
     """
-    logger.info(f'接收到的参数：{blog}')
+    logger.info(f'接收到的参数：{user}')
     
-    res = blog_manager.add_blog(blog)
+    res = user_manager.create_user(user)
+    logger.success(f'创建结果{res}')
     if res:
-        return ResponseModel(code=0, data={"id": blog.id}, message="创建成功")
+        return ResponseModel(code=0, data={"id": user.id}, message="创建成功")
     else:
         return ResponseModel(code=-1, data=None, message="创建失败")
 
-# 获取指定博客
-@router.get("/{blog_id}")
-async def get_blog(blog_id: str, blog_manager: BlogManager = Depends(get_blog_manager)):
+# 获取指定用户
+@router.get("/{user_id}")
+async def get_user(user_id: str, user_manager: UserManager = Depends(get_user_manager)):
     """
-    获取指定 ID 的博客
+    获取指定 ID 的用户
 
     Args:
-        blog_id (str): 博客的 ID
+        user_id (str): 用户的 ID
 
     Returns:
-        Blog: 博客对象，如果不存在则抛出 404 错误
+        User: 用户对象，如果不存在则抛出 404 错误
     """
-    blog = blog_manager.get_blog(blog_id)
-    logger.info(f'查找的结果-----{blog}')
+    user = user_manager.get_user_by_id(user_id)
+    logger.info(f'查找的结果-----{user}')
     
-    if not blog:
-        return ResponseModel(code=-1, data=None, message="博客不存在")
+    if not user:
+        return ResponseModel(code=-1, data=None, message="用户不存在")
 
-    blog_dict = {item[0]: item[1] for item in blog}
+    user_dict = {item[0]: item[1] for item in user}
 
-    return ResponseModel(code=0, data=blog_dict, message="获取成功")
+    return ResponseModel(code=0, data=user_dict, message="获取成功")
 
-# 分页获取博客
+# 分页获取用户
 @router.get("/")
-async def get_blogs_paginated(
+async def get_users_paginated(
     page: int = 1,
     page_size: int = 10,
-    blog_manager: BlogManager = Depends(get_blog_manager)
+    user_manager: UserManager = Depends(get_user_manager)
 ):
     """
-    分页获取博客列表
+    分页获取用户列表
 
     Args:
         page (int, optional): 页码. Defaults to 1.
         page_size (int, optional): 每页显示数量. Defaults to 10.
-        blog_manager (BlogManager, optional): 博客管理对象. Defaults to Depends(get_blog_manager).
+        user_manager (UserManager, optional): 用户管理对象. Defaults to Depends(get_user_manager).
 
     Returns:
         dict: 包含分页信息的字典
     """
 
-    blogs = blog_manager.get_blog_by_page(page, page_size)
-    return ResponseModel(code=0, data=blogs, message="获取成功")
+    # users = user_manager.get_user_by_page(page, page_size)
+    return ResponseModel(code=0, data=[], message="获取成功")
 
 
-# 删除指定博客
-@router.delete("/{blog_id}")
-async def delete_blog(blog_id: str, blog_manager: BlogManager = Depends(get_blog_manager)):
+# 删除指定用户
+@router.delete("/{user_id}")
+async def delete_user(user_id: str, user_manager: UserManager = Depends(get_user_manager)):
     """
-    删除指定 ID 的博客
+    删除指定 ID 的用户
 
     Args:
-        blog_id (str): 博客的 ID
+        user_id (str): 用户的 ID
 
     Returns:
         dict: 包含删除成功消息的字典
     """
-    if not blog_manager.delete_blog(blog_id):
-        return ResponseModel(code=-1, data=None, message="博客不存在")
+    if not user_manager.delete_user(user_id):
+        return ResponseModel(code=-1, data=None, message="用户不存在")
     return ResponseModel(code=0, data=None, message="删除成功")

@@ -1,13 +1,14 @@
 from datetime import datetime
 from loguru import logger
 from src.database.mysql.mysql_manage import MySQLManager
+from src.type.user_type import User
 
 class UserManager:
     table_name = "user"
     def __init__(self, db:MySQLManager):
         self.db = db
 
-    def create_user(self, name:str, age:int, phone:str, email:str, birth_day:str, passwd='password'):
+    def create_user(self, user:User):
         """
         创建用户
 
@@ -19,9 +20,20 @@ class UserManager:
             passwd (str): 密码
             birth_day (str): 生日，格式为YYYY-MM-DD
         """
-        sql = f"INSERT INTO {self.table_name} (name, age, phone, email, passwd, birth_day, create_time) VALUES (%s, %s, %s, %s, %s, %s, NOW())"
-        val = (name, age, phone, email, passwd, birth_day)
-        self.db.execute(sql, val)
+        sql = f"INSERT INTO {self.table_name} (id,name, age, phone, email, passwd, birth_day, create_time) VALUES (%s,%s, %s, %s, %s, %s, %s, NOW())"
+        val = (user.id,user.name, user.age, user.phone, user.email, user.passwd, user.birth_day)
+        sql = f"INSERT INTO {self.table_name} (name, age, phone, email, passwd, birth_day, create_time) VALUES ('zxy', 18, '17683242528', '123456@qq.com', '123456', '1998-05-28', NOW())"
+
+        logger.info('当前执行的sql:',sql)
+        try:
+            # self.db.execute(sql, [val])
+            res = self.db.execute(sql)
+            logger.info(f"用户创建成功{res}")
+            return True
+        except Exception as e:
+            logger.error(f"Error occurred: {e}")
+            return False
+
 
     def get_user_by_id(self, id:str):
         """
