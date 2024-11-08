@@ -38,7 +38,7 @@ async def create_user(user: User, user_manager: UserManager = Depends(get_user_m
     else:
         return ResponseModel(code=-1, data=None, message="创建失败")
 
-# 获取指定用户
+# 根据id获取指定用户
 @router.get("/{user_id}")
 async def get_user(user_id: str, user_manager: UserManager = Depends(get_user_manager)):
     """
@@ -56,9 +56,9 @@ async def get_user(user_id: str, user_manager: UserManager = Depends(get_user_ma
     if not user:
         return ResponseModel(code=-1, data=None, message="用户不存在")
 
-    user_dict = {item[0]: item[1] for item in user}
+    # user_dict = {item[0]: item[1] for item in user}
 
-    return ResponseModel(code=0, data=user_dict, message="获取成功")
+    return ResponseModel(code=0, data=user, message="获取成功")
 
 # 分页获取用户
 @router.get("/")
@@ -79,7 +79,7 @@ async def get_users_paginated(
         dict: 包含分页信息的字典
     """
 
-    # users = user_manager.get_user_by_page(page, page_size)
+    users = user_manager.get_user_by_name('',page, page_size)
     return ResponseModel(code=0, data=[], message="获取成功")
 
 

@@ -58,7 +58,7 @@ class Application(FastAPI):
     def __init__redis(self):
         self.redis = RedisManager(ip=self.config['redis']['ip'], port=self.config['redis']['port'], db=self.config['redis']['db'], auth=self.config['redis']['auth'], key_prefix='blog')
     def __init__mysql(self):
-        self.mysql = MySQLManager(ip=self.config['mysql']['ip'], port=self.config['mysql']['port'], db=self.config['mysql']['db'], user=self.config['mysql']['user'], passwd=self.config['mysql']['passwd'])
+        self.mysql = MySQLManager(host=self.config['mysql']['ip'], port=self.config['mysql']['port'], db=self.config['mysql']['db'], user=self.config['mysql']['user'], passwd=self.config['mysql']['passwd'])
 
     def __init_blog_manager(self):
         self.blog = BlogManager(dataBase=self.mongo)
