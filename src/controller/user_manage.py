@@ -75,11 +75,16 @@ class UserManager:
         ORDER BY id ASC 
         LIMIT %s OFFSET %s
         """
-        result = self.db.execute(sql, f"%{name}%", per_page, offset)
+        # 将参数打包为一个元组
+        params = (f"%{name}%", per_page, offset)
+
+        # 传递参数时使用元组
+        result = self.db.execute(sql, params)
 
         # 将查询结果转换为User对象列表
         users = [User(**dict(zip(self.all_attr.split(', '), row))) for row in result]
         return users
+
 
     # 其他查询方法，如根据name、phone查询，类似于get_user_by_id
 

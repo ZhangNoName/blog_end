@@ -80,7 +80,7 @@ async def get_users_paginated(
     """
 
     users = user_manager.get_user_by_name('',page, page_size)
-    return ResponseModel(code=0, data=[], message="获取成功")
+    return ResponseModel(code=0, data=users, message="获取成功")
 
 
 # 删除指定用户
