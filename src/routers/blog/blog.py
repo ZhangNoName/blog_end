@@ -33,9 +33,9 @@ async def create_blog(blog: Blog, blog_manager: BlogManager = Depends(get_blog_m
     
     res = blog_manager.add_blog(blog)
     if res:
-        return ResponseModel(code=0, data={"id": blog.id}, message="创建成功")
+        return ResponseModel(code=1, data={"id": blog.id}, message="创建成功")
     else:
-        return ResponseModel(code=-1, data=None, message="创建失败")
+        return ResponseModel(code=0, data=None, message="创建失败")
 
 # 获取指定博客
 @router.get("/{blog_id}")
@@ -53,11 +53,11 @@ async def get_blog(blog_id: str, blog_manager: BlogManager = Depends(get_blog_ma
     logger.info(f'查找的结果-----{blog}')
     
     if not blog:
-        return ResponseModel(code=-1, data=None, message="博客不存在")
+        return ResponseModel(code=0, data=None, message="博客不存在")
 
     blog_dict = {item[0]: item[1] for item in blog}
 
-    return ResponseModel(code=0, data=blog_dict, message="获取成功")
+    return ResponseModel(code=1, data=blog_dict, message="获取成功")
 
 # 分页获取博客
 @router.get("/")
@@ -79,7 +79,7 @@ async def get_blogs_paginated(
     """
 
     blogs = blog_manager.get_blog_by_page(page, page_size)
-    return ResponseModel(code=0, data=blogs, message="获取成功")
+    return ResponseModel(code=1, data=blogs, message="获取成功")
 
 
 # 删除指定博客
@@ -95,5 +95,5 @@ async def delete_blog(blog_id: str, blog_manager: BlogManager = Depends(get_blog
         dict: 包含删除成功消息的字典
     """
     if not blog_manager.delete_blog(blog_id):
-        return ResponseModel(code=-1, data=None, message="博客不存在")
-    return ResponseModel(code=0, data=None, message="删除成功")
+        return ResponseModel(code=0, data=None, message="博客不存在")
+    return ResponseModel(code=1, data=None, message="删除成功")

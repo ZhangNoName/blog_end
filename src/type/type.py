@@ -15,5 +15,5 @@ class ResponseModel(BaseModel):
         message (str): 描述信息，用于提供更详细的错误信息或成功提示。
     """
     code: int
-    data: Union[Dict[str, Any], List[Any], str]
+    data: Union[Dict[str, Any], List[Any], str, bool]
     message: str

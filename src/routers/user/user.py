@@ -34,9 +34,9 @@ async def create_user(user: User, user_manager: UserManager = Depends(get_user_m
     res = user_manager.create_user(user)
     logger.success(f'创建结果{res}')
     if res:
-        return ResponseModel(code=0, data={"id": user.id}, message="创建成功")
+        return ResponseModel(code=1, data={"id": user.id}, message="创建成功")
     else:
-        return ResponseModel(code=-1, data=None, message="创建失败")
+        return ResponseModel(code=0, data=None, message="创建失败")
 
 # 根据id获取指定用户
 @router.get("/{user_id}")
@@ -54,11 +54,11 @@ async def get_user(user_id: str, user_manager: UserManager = Depends(get_user_ma
     logger.info(f'查找的结果-----{user}')
     
     if not user:
-        return ResponseModel(code=-1, data=None, message="用户不存在")
+        return ResponseModel(code=0, data=None, message="用户不存在")
 
     # user_dict = {item[0]: item[1] for item in user}
 
-    return ResponseModel(code=0, data=user, message="获取成功")
+    return ResponseModel(code=1, data=user, message="获取成功")
 
 # 分页获取用户
 @router.get("/")
@@ -80,21 +80,23 @@ async def get_users_paginated(
     """
 
     users = user_manager.get_user_by_name('',page, page_size)
-    return ResponseModel(code=0, data=users, message="获取成功")
+    return ResponseModel(code=1, data=users, message="获取成功")
 
 
 # 删除指定用户
 @router.delete("/{user_id}")
 async def delete_user(user_id: str, user_manager: UserManager = Depends(get_user_manager)):
     """
-    删除指定 ID 的用户
+    停用指定 ID 的用户
 
     Args:
         user_id (str): 用户的 ID
 
     Returns:
-        dict: 包含删除成功消息的字典
+        dict: 包含停用成功消息的字典
     """
-    if not user_manager.delete_user(user_id):
-        return ResponseModel(code=-1, data=None, message="用户不存在")
-    return ResponseModel(code=0, data=None, message="删除成功")
+    res = user_manager.delete_user(user_id)
+    # logger.info(f'停用用户的结果:{res}')
+    if not res:
+        return ResponseModel(code=0, data=False, message="用户不存在")
+    return ResponseModel(code=1, data=True, message="停用成功")

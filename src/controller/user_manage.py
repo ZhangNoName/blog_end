@@ -6,10 +6,19 @@ from src.type.user_type import User
 
 class UserManager:
     table_name = "user"
-    all_attr = "id, user_name, name, age, phone, email, passwd, birth_day, create_time"
+    all_attr = ['id', 'user_name', 'name', 'age', 'phone', 'email', 'passwd', 'birth_day', 'create_time', 'is_active']
+    
     def __init__(self, db:MySQLManager):
         self.db = db
 
+    def get_all_user_attr(self) -> str:
+        """
+        获取全部的用户名字段的字符串
+        
+        Returns:
+            属性字符串，以逗号分隔
+        """
+        return ",".join(self.all_attr)
     def create_user(self, user:User):
         """
         创建用户
@@ -44,7 +53,7 @@ class UserManager:
         Returns:
             User: User对象，如果不存在则返回None
         """
-        sql = f"SELECT {self.all_attr} FROM {self.table_name} WHERE id = %s"
+        sql = f"SELECT {self.get_all_user_attr()} FROM {self.table_name} WHERE id = %s"
         result = self.db.fetch_one(sql, user_id)
         logger.info(f"根据id查询的结果{result}")
         
@@ -53,7 +62,7 @@ class UserManager:
             user_data = result
         else:
             # 如果是元组形式，手动构造字典
-            user_data = dict(zip(self.all_attr.split(', '), result))
+            user_data = dict(zip(self.all_attr, result))
         return user_data
     def get_user_by_name(self, name: str, page: int = 1, per_page: int = 10) -> list[User]:
         """
@@ -69,7 +78,7 @@ class UserManager:
         """
         offset = (page - 1) * per_page
         sql = f"""
-        SELECT {self.all_attr} 
+        SELECT {self.get_all_user_attr()} 
         FROM {self.table_name} 
         WHERE name LIKE %s 
         ORDER BY id ASC 
@@ -82,34 +91,44 @@ class UserManager:
         result = self.db.execute(sql, params)
 
         # 将查询结果转换为User对象列表
-        users = [User(**dict(zip(self.all_attr.split(', '), row))) for row in result]
+        users = [User(**dict(zip(self.all_attr, row))) for row in result]
         return users
 
 
     # 其他查询方法，如根据name、phone查询，类似于get_user_by_id
 
-    def update_user(self, id:str, **kwargs):
+    def update_user(self, user_id: str, **kwargs) -> int:
         """
         更新用户信息
 
         Args:
-            id (int): 用户ID
+            user_id (str): 用户ID
             kwargs: 要更新的字段和值，例如：name='new_name', age=30
+
+        Returns:
+            int: 受影响的行数
         """
         # 构造更新语句
         set_clause = ', '.join(f"{key} = %s" for key in kwargs)
         sql = f"UPDATE {self.table_name} SET {set_clause} WHERE id = %s"
         # 构造参数
-        values = tuple(kwargs.values()) + (id,)
-        self.db.execute(sql, values)
+        values = tuple(kwargs.values()) + (user_id,)
+        # 执行SQL并返回受影响的行数
+        return self.db.execute(sql, values)
 
-    def delete_user(self, id:str):
+
+    def delete_user(self, user_id: str) -> bool:
         """
-        删除用户
+        逻辑删除用户（停用账号）
 
         Args:
-            id (int): 用户ID
+            user_id (str): 用户ID
+
+        Returns:
+            bool: 修改成功返回True，否则返回False
         """
-        sql = "DELETE FROM users WHERE id = %s"
-        val = (id,)
-        self.db.execute(sql, val)
+        # 调用 update_user 方法更新 is_active 字段为 0
+        result = self.update_user(user_id, is_active=0)
+        # logger.info(f'更改的信息结果：{result}')
+        # 判断受影响的行数，update_user 默认返回受影响的行数
+        return result > 0
