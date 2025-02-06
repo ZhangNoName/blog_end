@@ -10,4 +10,4 @@ async def base_info():
     """
     基本信息
     """
-    return {"获取当前的基本信息：博客数目"}
+    return "获取当前的基本信息：博客数目"
