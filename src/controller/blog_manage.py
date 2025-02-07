@@ -6,13 +6,15 @@ from bson import ObjectId
 from loguru import logger
 from pymongo.cursor import Cursor
 from src.database.mongo.mongodb_manage import MongoDBManager
-from src.type.blog_type import Blog
+from src.database.mysql.mysql_manage import MySQLManager
+from src.type.blog_type import Blog, BlogBase
 
 
 
 class BlogManager:
-    def __init__(self, dataBase: MongoDBManager):
-        self.db = dataBase
+    def __init__(self,baseDB:MySQLManager, contentDB: MongoDBManager):
+        self.db = baseDB
+        self.contentDB = contentDB
 
     def add_blog(self, blog: Blog) -> str:
         """
@@ -24,7 +26,18 @@ class BlogManager:
         Returns:
             str: 插入后的文档的 ID
         """
-        return self.db.insert_one("blogs", blog.model_dump())
+        # return self.contentDB.insert_one("blogs", blog.model_dump())
+        
+        sql = """
+        INSERT INTO blog_base ( title, author,  updated_at, abstract, is_deleted)
+        VALUES ( %s, %s, %s, %s, %s)
+        """
+        logger.info(f'插入的数据{blog}')
+        params = ( blog.title, blog.author,  blog.updated_at, blog.abstract, 0)
+        self.db.execute(sql, params)
+
+        # 插入MongoDB记录
+        return self.contentDB.insert_one("blogs", {"blogId": blog.id, "title": blog.title, "content": blog.content})
 
     def delete_blog(self, blog_id: str) -> bool:
         """
@@ -36,8 +49,13 @@ class BlogManager:
         Returns:
             bool: 删除成功返回 True，否则返回 False
         """
-        result = self.db.delete_one("blogs", {"_id": ObjectId(blog_id)})
-        return result.deleted_count > 0
+        sql = """
+        UPDATE blogs
+        SET is_deleted = TRUE
+        WHERE id = %s AND is_deleted = FALSE
+        """
+        result = self.db.execute(sql, (blog_id,))
+        return result > 0
 
     def get_blog(self, blog_id: str) -> Blog:
         """
@@ -49,7 +67,7 @@ class BlogManager:
         Returns:
             Blog: 博客对象，如果不存在则返回 None
         """
-        blog_data = self.db.find_one("blogs", {"id": blog_id})
+        blog_data = self.contentDB.find_one("blogs", {"id": blog_id})
         logger.info(f'查询到的结果{blog_data}')
         if blog_data:
             return Blog(**blog_data)
@@ -68,8 +86,29 @@ class BlogManager:
         """
 
         skip = (page - 1) * page_size
-        blogs_data = self.db.find_page_query("blogs", filter={}, skip=skip, page_size=page_size)
-        total_count = self.db.find_count("blogs")
+        blogs_data = self.db.find_page_query("blog_base", filter={}, skip=skip, page_size=page_size)
+        # total_count = self.db.find_count("blogs")
+        total_count = 10
+        # 将查询出来的字典数据转换为 Blog 对象
+        blogs = [BlogBase(**blog_data) for blog_data in blogs_data]
+        return {
+            "total": total_count,
+            "page": page,
+            "page_size": page_size,
+            "list": blogs
+            # "list": blogs_data
+        }
+        # 查询MySQL数据库，排除已删除的博客
+        sql = """
+        SELECT id, title, author, updated_at, abstract,view_count,comment_count,tag,category,byte_num
+        FROM blog_base
+        WHERE is_deleted = 0
+        LIMIT %s OFFSET %s
+        """
+        blogs_data = self.db.execute(sql, (page_size, skip))
+
+        # 获取总记录数
+        total_count = self.db.execute("SELECT COUNT(*) FROM blog_base WHERE is_deleted = FALSE", ())
 
         return {
             "total": total_count,

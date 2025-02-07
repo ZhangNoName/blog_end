@@ -32,6 +32,7 @@ async def create_blog(blog: Blog, blog_manager: BlogManager = Depends(get_blog_m
     logger.info(f'接收到的参数：{blog}')
     
     res = blog_manager.add_blog(blog)
+    
     if res:
         return ResponseModel(code=1, data={"id": blog.id}, message="创建成功")
     else:

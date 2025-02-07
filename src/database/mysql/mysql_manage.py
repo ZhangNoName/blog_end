@@ -1,8 +1,8 @@
 from loguru import logger
 import pymysql
 import time
-from typing import Any, Optional, Tuple
-
+from typing import Any, List, Optional, Tuple
+from pymysql.cursors import DictCursor  # 导入 DictCursor
 class MySQLManager:
     """
     MySQL连接管理类，基于PyMySQL库实现。
@@ -15,7 +15,7 @@ class MySQLManager:
         user (str): MySQL用户名
         passwd (str): MySQL密码
         db (str): MySQL数据库名
-        charset (str): 字符集，默认为utf8mb4
+        charset (str): 字符集，默认为utf8mb4,注意和数据库的字符集一致
         max_retry_times (int): 最大重试次数，默认为3
         retry_interval (int): 重试间隔时间（秒），默认为5
     """
@@ -45,9 +45,11 @@ class MySQLManager:
                 passwd=self.passwd,
                 db=self.db,
                 charset=self.charset,
-                autocommit=False  # 禁止自动提交，使用手动提交
+                autocommit=False,  # 禁止自动提交，使用手动提交
+                cursorclass=DictCursor  # 设置游标类型为字典游标
             )
             self.cursor = self.cnx.cursor()
+            
             logger.info("成功连接到MySQL数据库")
         except pymysql.Error as e:
             logger.error(f"连接MySQL数据库失败: {e}")
@@ -123,6 +125,41 @@ class MySQLManager:
         except pymysql.Error as e:
             logger.error(f"查询失败: {e}")
             return None
+    
+    def find_page_query(self, table: str, filter: Optional[dict] = None, skip: int = 0, page_size: int = 10) -> List[dict]:
+        """
+        分页查询 MySQL 中的记录。
+
+        Args:
+            table (str): 要查询的表名。
+            filter (dict): 查询的过滤条件（WHERE 子句）。
+            skip (int): 从第几条记录开始（偏移量）。
+            page_size (int): 每页显示的记录数。
+
+        Returns:
+            List[dict]: 查询结果的字典列表。
+        """
+        if filter is None:
+            filter = {}
+
+        # 构建 WHERE 子句
+        where_clause = " AND ".join([f"{key} = %s" for key in filter.keys()])
+        where_clause = f"WHERE {where_clause}" if where_clause else ""
+
+        # 构建 SQL 查询语句
+        sql = f"SELECT * FROM {table} {where_clause} LIMIT %s OFFSET %s"
+        params = list(filter.values()) + [page_size, skip]
+
+        # 执行查询
+        try:
+            logger.info(f"执行分页查询: {sql} | 参数: {params}")
+            self.cursor.execute(sql, params)
+            result = self.cursor.fetchall()
+            logger.info(f"查询结果: {result}")
+            return result
+        except pymysql.Error as e:
+            logger.error(f"分页查询失败: {e}")
+            return []
 
     def close(self):
         """关闭数据库连接"""

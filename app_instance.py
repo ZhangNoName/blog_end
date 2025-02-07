@@ -61,7 +61,7 @@ class Application(FastAPI):
         self.mysql = MySQLManager(host=self.config['mysql']['ip'], port=self.config['mysql']['port'], db=self.config['mysql']['db'], user=self.config['mysql']['user'], passwd=self.config['mysql']['passwd'])
 
     def __init_blog_manager(self):
-        self.blog = BlogManager(dataBase=self.mongo)
+        self.blog = BlogManager(baseDB=self.mysql,contentDB=self.mongo)
     def __init_user_manager(self):
         self.user = UserManager(db=self.mysql)
         
