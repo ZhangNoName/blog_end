@@ -99,6 +99,10 @@ class MySQLManager:
                 result = self.cursor.fetchall()
                 logger.info(f"查询结果: {result}")
                 return result
+            elif sql.strip().lower().startswith("insert"):
+                result = self.cursor.lastrowid  
+                logger.info(f"查询结果: {result}")
+                return result
             return self.cursor.rowcount
         except pymysql.Error as e:
             self.cnx.rollback()

@@ -1,10 +1,11 @@
+from typing import Union
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 from pydantic import BaseModel
 from src.controller.blog_manage import BlogManager
 from app_instance import app
-from src.type.blog_type import Blog
+from src.type.blog_type import Blog, BlogCreate
 from src.type.type import ResponseModel
 
 
@@ -19,7 +20,7 @@ def get_blog_manager() -> BlogManager:
 
 # 创建新博客
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_blog(blog: Blog, blog_manager: BlogManager = Depends(get_blog_manager)):
+async def create_blog(blog: BlogCreate, blog_manager: BlogManager = Depends(get_blog_manager)):
     """
     创建新的博客
 
@@ -34,13 +35,13 @@ async def create_blog(blog: Blog, blog_manager: BlogManager = Depends(get_blog_m
     res = blog_manager.add_blog(blog)
     
     if res:
-        return ResponseModel(code=1, data={"id": blog.id}, message="创建成功")
+        return ResponseModel(code=1, data={"id": res}, message="创建成功")
     else:
         return ResponseModel(code=0, data=None, message="创建失败")
 
 # 获取指定博客
 @router.get("/{blog_id}")
-async def get_blog(blog_id: str, blog_manager: BlogManager = Depends(get_blog_manager)):
+async def get_blog(blog_id:int, blog_manager: BlogManager = Depends(get_blog_manager)):
     """
     获取指定 ID 的博客
 
