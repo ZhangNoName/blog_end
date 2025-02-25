@@ -20,10 +20,17 @@ class BlogBase(BaseModel):
     comment_num: int = Field(0, description="评论次数")
     byte_num: int = Field(0, description="评论次数")
     tag: Optional[str] = Field(..., description="标签")
-    category: Optional[str] = Field(..., description="分类")
+    category: Optional[int] = Field(..., description="分类")
 
+
+class TagExisting(BaseModel):
+    id: int = Field(..., description="已有标签的 ID")
+
+class TagNew(BaseModel):
+    name: str = Field(..., description="新增标签的名称")
+    
 class BlogCreate(Blog):
     id: Optional[int] = Field(None, description="博客的唯一标识符")
     abstract: str = Field(..., description="文章摘要")
-    tag: List[str] = Field(..., description="文章标签（多个）")  # 标签变为数组
-    category: str = Field(..., description="分类")
+    tag: List[Union[int, TagNew]] = Field(..., description="文章标签（可以是已有标签ID或新增标签）")
+    category: int = Field(..., description="分类")

@@ -7,7 +7,7 @@ from loguru import logger
 from pymongo.cursor import Cursor
 from src.database.mongo.mongodb_manage import MongoDBManager
 from src.database.mysql.mysql_manage import MySQLManager
-from src.type.blog_type import Blog, BlogBase, BlogCreate
+from src.type.blog_type import Blog, BlogBase, BlogCreate, TagNew
 
 
 
@@ -16,6 +16,32 @@ class BlogManager:
         self.db = baseDB
         self.contentDB = contentDB
 
+    def get_or_create_tag(self, tag: Union[str, TagNew],blog_id:str) -> int:
+        """检查标签是否存在，不存在则创建"""
+
+        if isinstance(tag, str):
+            # 已有标签，直接返回 ID
+            logger.info('已有id',tag)
+            id =  tag
+        elif isinstance(tag, TagNew):
+            # 查询是否存在该标签
+            tag_name = tag.name.strip() 
+            sql = "SELECT id FROM tag WHERE name = %s"
+            id = self.db.fetch_one(sql, tag_name)
+            if id is None:
+                create_sql = """
+                    INSERT INTO tag (name) VALUES (%s)
+                """
+                # 不存在，插入新标签
+                id = self.db.execute(create_sql, tag_name)
+        # 插入博客标签关联表
+        if id:
+            # 插入 blog_tag 关系表
+            blog_tag_sql = "INSERT IGNORE INTO blog_tag (blog_id, tag_id) VALUES (%s, %s)"
+            self.db.execute(blog_tag_sql, (blog_id, id))
+        return id
+            
+        
     def add_blog(self, blog: BlogCreate) -> str:
         """
         添加一个博客,返回生成的唯一ID。
@@ -29,14 +55,14 @@ class BlogManager:
         # return self.contentDB.insert_one("blogs", blog.model_dump())
         
         sql = """
-        INSERT INTO blog ( title, author,  updated_at, abstract, is_deleted)
-        VALUES ( %s, %s, %s, %s, %s)
+        INSERT INTO blog (title, author, abstract,  category, updated_at, is_deleted)
+        VALUES (%s, %s,  %s, %s, NOW(), 0)
         """
-        # 先将出content之外的信息插入到MySQL数据库
-        params = ( blog.title, blog.author,  blog.updated_at, blog.abstract, 0)
+        params = (blog.title, blog.author, blog.abstract,  blog.category)
         id = self.db.execute(sql, params) 
         # logger.info(f'插入的结果{res}')
-
+         # 处理标签，确保所有 tag 都是 ID
+        tag_ids = [self.get_or_create_tag(tag,id) for tag in blog.tag]
         # 将内容插入MongoDB记录
         result = self.contentDB.insert_one("blogs", {"blogId": id, "title": blog.title, "content": blog.content})
         if result:
