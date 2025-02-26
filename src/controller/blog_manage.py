@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import Any, Dict, List, Union
 import uuid
 from datetime import datetime
 
@@ -103,46 +103,74 @@ class BlogManager:
             return Blog(**blog_data)
         return None
     
-    def get_blog_by_page(self, page: int, page_size: int) -> List[Blog]:
+    def get_blog_by_page(self, page: int, page_size: int) -> Dict[str, Any]:
         """
-        分页获取博客列表。
-
+        分页获取博客列表，并附加标签信息。
+        
         Args:
             page (int): 页码，从1开始
             page_size (int): 每页显示的博客数量
-
+            
         Returns:
-            List[Blog]: 分页后的博客列表
+            Dict[str, Any]: 包含博客列表、总数、分页信息的字典
         """
 
         skip = (page - 1) * page_size
+        # 1. 查询博客数据
         blogs_data = self.db.find_page_query("blog", filter={}, skip=skip, page_size=page_size)
-        # total_count = self.db.find_count("blogs")
-        total_count = 10
-        # 将查询出来的字典数据转换为 Blog 对象
-        blogs = [BlogBase(**blog_data) for blog_data in blogs_data]
+
+        # 获取所有博客的 ID
+        blog_ids = [blog["id"] for blog in blogs_data]
+        
+        if not blog_ids:
+            return {
+                "total": 0,
+                "page": page,
+                "page_size": page_size,
+                "list": []
+            }
+
+        # 2. 查询 blog_tag 表，获取所有博客的 tag 关联关系
+        blog_tag_query = """
+            SELECT blog_id, tag_id FROM blog_tag WHERE blog_id IN (%s)
+        """ % (", ".join(map(str, blog_ids)))
+        
+        blog_tag_data = self.db.execute(blog_tag_query)  # 结果: [{'blog_id': 1, 'tag_id': 2}, ...]
+
+        # 构建 blog_id -> tag_id 列表的映射
+        blog_tag_map = {}
+        tag_ids = set()  # 收集所有的 tag_id
+        for row in blog_tag_data:
+            blog_id = row["blog_id"]
+            tag_id = row["tag_id"]
+            tag_ids.add(tag_id)
+            if blog_id not in blog_tag_map:
+                blog_tag_map[blog_id] = []
+            blog_tag_map[blog_id].append(tag_id)
+
+        # 3. 查询 tag 表，获取所有 tag_id 对应的 tag_name
+        # if tag_ids:
+        #     tag_query = """
+        #         SELECT id, name FROM tag WHERE id IN (%s)
+        #     """ % (", ".join(map(str, tag_ids)))
+        #     tag_data = self.db.execute(tag_query)  # 结果: [{'id': 2, 'name': 'Python'}, ...]
+
+        #     # 构建 tag_id -> tag_name 映射
+        #     tag_map = {row["id"]: row["name"] for row in tag_data}
+        # else:
+        #     tag_map = {}
+
+        # # 4. 组装最终的博客数据
+        for blog in blogs_data:
+            blog_id = blog["id"]
+            blog["tag"] = [tag_id for tag_id in blog_tag_map.get(blog_id, [])]  # 关联 tag
+
+        # total_count = self.db.find_count("blog")  # 统计总数
+        # total_count = 10
+        # logger.info(f'查询到的结果{blogs_data}')
         return {
-            "total": total_count,
+            # "total": total_count,
             "page": page,
             "page_size": page_size,
-            "list": blogs
-            # "list": blogs_data
-        }
-        # 查询MySQL数据库，排除已删除的博客
-        sql = """
-        SELECT id, title, author, updated_at, abstract,view_count,comment_count,tag,category,byte_num
-        FROM blog
-        WHERE is_deleted = 0
-        LIMIT %s OFFSET %s
-        """
-        blogs_data = self.db.execute(sql, (page_size, skip))
-
-        # 获取总记录数
-        total_count = self.db.execute("SELECT COUNT(*) FROM blog WHERE is_deleted = FALSE", ())
-
-        return {
-            "total": total_count,
-            "page": page,
-            "page_size": page_size,
-            "list": [Blog(**blog_data) for blog_data in blogs_data]
+            "list": [BlogBase(**blog_data) for blog_data in blogs_data]
         }

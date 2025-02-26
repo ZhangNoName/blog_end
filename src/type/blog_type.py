@@ -39,5 +39,5 @@ class BlogBase(BaseModel):
     view_num: int = Field(0, description="浏览次数")
     comment_num: int = Field(0, description="评论次数")
     byte_num: int = Field(0, description="评论次数")
-    tag: Optional[str] = Field([], description="标签")
+    tag: Optional[List[int]] = Field([], description="标签")
     category: Optional[int] = Field(None, description="分类")
