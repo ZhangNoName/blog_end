@@ -99,3 +99,4 @@ async def delete_blog(blog_id: str, blog_manager: BlogManager = Depends(get_blog
     if not blog_manager.delete_blog(blog_id):
         return ResponseModel(code=0, data=None, message="博客不存在")
     return ResponseModel(code=1, data=None, message="删除成功")
+

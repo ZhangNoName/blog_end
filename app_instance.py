@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from loguru import logger
 from fastapi.middleware.cors import CORSMiddleware
 from src.controller.blog_manage import BlogManager
+from src.controller.tag_manage import TagManager
 from src.controller.user_manage import UserManager
 from src.database.mongo.mongodb_manage import MongoDBManager
 from src.database.mysql.mysql_manage import MySQLManager
@@ -29,6 +30,7 @@ class Application(FastAPI):
         self.__init__mysql()
         self.__init_blog_manager()
         self.__init_user_manager()
+        self.__init_tag_manager()
         logger.info(f'当前模式为{env}')
         if env == 'local':
             pass
@@ -64,6 +66,8 @@ class Application(FastAPI):
         self.blog = BlogManager(baseDB=self.mysql,contentDB=self.mongo)
     def __init_user_manager(self):
         self.user = UserManager(db=self.mysql)
+    def __init_tag_manager(self):
+        self.tag = TagManager(db=self.mysql)
         
 
 @asynccontextmanager
