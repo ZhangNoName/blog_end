@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Union
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class ResponseModel(BaseModel):
     """
@@ -17,3 +17,10 @@ class ResponseModel(BaseModel):
     code: int
     data: Union[Dict[str, Any], List[Any], str, bool]
     message: str
+
+# 定义返回类型 BlogStats
+class BlogStats(BaseModel):
+    blog_count: int = Field(..., description="博客文章的总数量", example=100)
+    category_count: int = Field(..., description="博客种类的总数量", example=10)
+    tag_count: int = Field(..., description="博客标签的总数量", example=20)
+    total_view_num: int = Field(0, description="所有博客的总浏览量，默认为0", example=5000)

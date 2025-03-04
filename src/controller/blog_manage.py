@@ -103,6 +103,7 @@ class BlogManager:
             return Blog(**blog_data)
         return None
     
+    
     def get_blog_by_page(self, page: int, page_size: int) -> Dict[str, Any]:
         """
         分页获取博客列表，并附加标签信息。
