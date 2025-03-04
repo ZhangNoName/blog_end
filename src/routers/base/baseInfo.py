@@ -20,15 +20,15 @@ async def base_info(base_manager: BaseManager = Depends(get_base_manager)):
     """
     获取博客的统计信息，包括文章数、种类数、标签数和总浏览量。
     """
-    logger.info("获取博客统计信息")
+    # logger.info("获取博客统计信息")
     try:
-        logger.info("获取博客统计信息---准备进入")
+        # logger.info("获取博客统计信息---准备进入")
         res = base_manager.get_base_info()
-        logger.info(f"获取博客统计信息成功: {res}")
-        return res
+        # logger.info(f"获取博客统计信息成功: {res}")
+        return ResponseModel(code=1, data=res.model_dump(), message="获取统计数据成功")
     except Exception as e:
         logger.error(f"获取博客统计信息失败: {str(e)}")
-        return BlogStats(blog_count=0, category_count=0, tag_count=0, total_view_num=0)
+        return ResponseModel(code=0, data=BlogStats(blog_count=0, category_count=0, tag_count=0, total_view_num=0), message="获取统计数据失败")
 @router.get("/blog/category", tags=["基础信息"],description="获取博客的种类列表",summary="博客种类列表")
 async def get_blog_category(tag_manager: TagManager = Depends(get_tag_manager)):
     """
